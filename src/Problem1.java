@@ -44,14 +44,18 @@ public class Problem1 {
             }
             else if (choice == 3) {
                 System.out.println("Enter the r of the signature: ");
-                BigInteger r = new BigInteger(in.next());
+                BigInteger r = new BigInteger(in.next(), 16);
                 System.out.println("Enter the s of the signature: ");
-                BigInteger s = new BigInteger(in.next());
+                BigInteger s = new BigInteger(in.next(), 16);
                 System.out.println("Enter the public key y of the signer: ");
-                BigInteger y = new BigInteger(in.next());
+                BigInteger y = new BigInteger(in.next(), 16);
+                System.out.println("Enter a p: ");
+                p = new BigInteger(in.next(), 16);
+                System.out.println("Enter a g: ");
+                g = new BigInteger(in.next(), 16);
                 System.out.println("Enter the message: ");
                 String m = in.next();
-                verify(r, s, y, m);
+                verify(r, s, y, p, g, m);
             }
             else
                 System.out.println("Number entered was not an option.");
@@ -132,15 +136,19 @@ public class Problem1 {
     }
 
     //Verify signature (r, s) for message m with public key y
-    private static void verify(BigInteger r, BigInteger s, BigInteger y, String m) throws NoSuchAlgorithmException {
+    private static void verify(BigInteger r, BigInteger s, BigInteger y, BigInteger p, BigInteger g, String m) throws NoSuchAlgorithmException {
         H = MessageDigest.getInstance("SHA-256");
-        if (!(BigInteger.ZERO.compareTo(r) < 0 && r.compareTo(p) > 0))
+
+        //g^h(m) mod p
+        BigInteger left = g.modPow(new BigInteger(H.digest(m.getBytes())), p);
+
+        //y^r * r^s (mod p)
+        BigInteger right = y.modPow(r, p).multiply(r.modPow(s, p)).mod(p);
+        if (!(BigInteger.ZERO.compareTo(r) < 0 && r.compareTo(p) < 0))
             System.out.println("Invalid verification on 0 < r < p");
-        if (!(BigInteger.ZERO.compareTo(s) < 0 && s.compareTo(p.subtract(BigInteger.ONE)) > 0))
+        else if (!(BigInteger.ZERO.compareTo(s) < 0 && s.compareTo(p.subtract(BigInteger.ONE)) < 0))
             System.out.println("Invalid verification on 0 < s < p - 1");
-        BigInteger left = g.mod(new BigInteger(H.digest(m.getBytes())));
-        BigInteger right = y.mod(r).multiply(r.mod(s));
-        if (left.mod(p).compareTo(right.mod(p)) == 0)
+        else if (left.compareTo(right) == 0)
             System.out.println("Verification success");
         else
             System.out.println("Invalid verification on g^H(m) = y^r * r^s (mod p)");
